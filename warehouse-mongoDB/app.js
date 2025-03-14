@@ -87,6 +87,14 @@ async function getAllProducts() {
   }
 }
 
+
+
+
+
+
+
+
+
 //* Membuat Collection Inventory
 
 async function createInventoryCollection() {
@@ -120,31 +128,45 @@ const sampleInventory = [
   { _id: 4, product_id: 4, quantity: 40, location: "Gudang B" },
 ];
 
+
+
+
+
+
+
+
+
+
+
+// * Tulis Query untuk menggabungkan tabel (aggregate) Produk dan Inventaris, yang menampilkan nama produk, kuantitas, dan lokasi untuk semua produk. Expected output:
+
 async function aggregateProductInventory() {
   try {
     const inventoryCollection = db.collection("Inventory");
 
-    const viewResults = await inventoryCollection.aggregate([
-      {
-        $lookup: {
-          from: "Products", 
-          localField: "product_id", 
-          foreignField: "_id", 
-          as: "productDetails", 
+    const viewResults = await inventoryCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "Products",
+            localField: "product_id",
+            foreignField: "_id",
+            as: "productDetails",
+          },
         },
-      },
-      {
-        $unwind: "$productDetails", 
-      },
-      {
-        $project: {
-          _id: 0, 
-          product_name: "$productDetails.product_name",
-          quantity: 1, 
-          location: 1, 
+        {
+          $unwind: "$productDetails",
         },
-      },
-    ]).toArray();
+        {
+          $project: {
+            _id: 0,
+            product_name: "$productDetails.product_name",
+            quantity: 1,
+            location: 1,
+          },
+        },
+      ])
+      .toArray();
 
     const orderedResult = viewResults.map(
       ({ product_name, quantity, location }) => ({
@@ -154,14 +176,265 @@ async function aggregateProductInventory() {
       })
     );
 
-     console.log("Hasil Agregasi Produk & Inventory:");
-     orderedResult.forEach(({ product_name, quantity, location }) => {
-       console.log(
-         `Nama Produk: ${product_name}\nJumlah: ${quantity}\nLokasi: ${location}\n`
-       );
-     });
+    console.log("Hasil Agregasi Produk & Inventory:");
+    orderedResult.forEach(({ product_name, quantity, location }) => {
+      console.log(
+        `Nama Produk: ${product_name}\nJumlah: ${quantity}\nLokasi: ${location}\n`
+      );
+    });
   } catch (e) {
     console.error("Error aggregating product inventory:", e);
+  }
+}
+
+
+
+
+
+
+// *Perbarui harga 'Laptop' menjadi 1099,99.
+async function updateLaptopPrice() {
+  try {
+    const productsCollection = db.collection("Products");
+
+    const updateResult = await productsCollection.updateOne(
+      { product_name: "Laptop" },
+      { $set: { price: 1099.99 } }
+    );
+    console.log(
+      `Update harga laptop: ${updateResult.matchedCount} produk ditemukan dan ${updateResult.modifiedCount} produk berhasil diperbarui!`
+    );
+  } catch (e) {
+    console.error("Error updating laptop price:", e);
+  }
+}
+
+
+
+
+
+
+
+// * Tuliskan query untuk menghitung nilai total inventaris pada setiap gudang.
+async function calculateTotalPriceByLocation() {
+  try {
+    const inventoryCollection = db.collection("Inventory");
+
+    const result = await inventoryCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "Products",
+            localField: "product_id",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        {
+          $unwind: "$productDetails",
+        },
+        {
+          $group: {
+            _id: "$location",
+            total_value: {
+              $sum: {
+                $multiply: ["$quantity", "$productDetails.price"],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            location: "$_id",
+            total_value: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    console.log("Total harga berdasarkan lokasi:");
+    result.forEach(({ location, total_value }) => {
+      console.log(`Lokasi: ${location}, Total Harga: ${total_value}`);
+    });
+  } catch (e) {
+    console.error("Error calculating total price by location:", e);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// * membuat Orders Collection
+async function createOrdersColllection() {
+  try {
+    const ordersCollection = db.collection("Orders");
+    const existingOrdersCollection = await ordersCollection.find().toArray();
+    if (existingOrdersCollection.length > 0) {
+      console.log("Koleksi Products sudah ada. Lewati pemrosesan!");
+      return;
+    }
+
+    const result = await ordersCollection.insertMany(ordersCollectionData);
+    console.log(`${result.insertedCount} orders ditambahkan ke Orders!`);
+  } catch (e) {
+    console.error("Gagal menambah orders ke Orders.", e);
+  }
+}
+
+// * Masukkan data berikut ke dalam Colection Orders :
+// {
+//   _id: 1,
+//   customer_id: 101,
+//   order_date: ISODate("2024-08-12"),
+//   order_details: [
+//     { product_id: 1, quantity: 2 },
+//     { product_id: 3, quantity: 1 }
+//   ]
+// },
+// {
+//   _id: 2,
+//   customer_id: 102,
+//   order_date: ISODate("2024-08-13"),
+//   order_details: [
+//     { product_id: 2, quantity: 1 },
+//     { product_id: 4, quantity: 2 }
+//   ]
+// }
+const ordersCollectionData = [
+  {
+    _id: 1,
+    customer_id: 101,
+    order_date: new Date("2024-08-12"),
+    order_details: [
+      { product_id: 1, quantity: 2 },
+      { product_id: 3, quantity: 1 },
+    ],
+  },
+  {
+    _id: 2,
+    customer_id: 102,
+    order_date: new Date("2024-08-13"),
+    order_details: [
+      { product_id: 2, quantity: 1 },
+      { product_id: 4, quantity: 2 },
+    ],
+  },
+];
+
+
+
+
+
+
+
+
+//  * Tulis Query untuk menampilkan jumlah total untuk setiap pesanan, termasuk order_id, order_date, dan total_amount.
+
+async function viewOrderDetails() {
+  try {
+    const ordersCollection = db.collection("Orders");
+
+    const result = await ordersCollection
+      .aggregate([
+        {
+          $unwind: "$order_details", // Buka array order_details
+        },
+        {
+          $lookup: {
+            from: "Products", // Gabung dengan koleksi Products
+            localField: "order_details.product_id",
+            foreignField: "_id",
+            as: "productInfo",
+          },
+        },
+        {
+          $unwind: "$productInfo", // Buka hasil lookup
+        },
+        {
+          $project: {
+            order_id: "$_id",
+            order_date: 1,
+            total_amount: {
+              $multiply: ["$order_details.quantity", "$productInfo.price"],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$_id", // Group berdasarkan order_id
+            order_date: { $first: "$order_date" },
+            total_amount: { $sum: "$total_amount" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            order_id: "$_id",
+            order_date: 1,
+            total_amount: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    console.log(result);
+  } catch (e) {
+    console.error("Error view order details:", e);
+  }
+}
+
+
+
+
+
+
+
+
+// * Tulis query untuk mencari produk yang belum pernah dipesan.
+async function getUnorderedProducts() {
+  try {
+    const productsCollection = db.collection("Products");
+
+    const result = await productsCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "Orders",
+            localField: "_id",
+            foreignField: "order_details.product_id",
+            as: "orderInfo",
+          },
+        },
+        {
+          $match: {
+            orderInfo: { $size: 0 }, 
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            product_id: "$_id",
+            product_name: 1,
+          },
+        },
+      ])
+      .toArray();
+
+      console.log(result);
+  } catch (e) {
+    console.error("Error get unordered products:", e);
   }
 }
 
@@ -170,8 +443,13 @@ async function aggregateProductInventory() {
     await run();
     await createProductsCollection();
     await getAllProducts();
-    await createInventoryCollection()
-    await aggregateProductInventory()
+    await createInventoryCollection();
+    await aggregateProductInventory();
+    await updateLaptopPrice();
+    await calculateTotalPriceByLocation();
+    await createOrdersColllection();
+    await viewOrderDetails();
+    await getUnorderedProducts();
   } catch (err) {
     console.error("Terjadi kesalahan:", err);
   } finally {
