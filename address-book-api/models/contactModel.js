@@ -1,4 +1,4 @@
-let db = require("../db");
+let connectDB = require("../db");
 class Contact {
   constructor(name, phoneNumber, company, email) {
     this.name = name;
@@ -8,65 +8,69 @@ class Contact {
   }
 
   static async create(name, phoneNumber, company, email) {
-    const db = await db()
-    let newContact = new Contact(name, phoneNumber, company, email);
-    return new Promise((resolve, reject) => {
-      db.run(
+    const db = await connectDB();
+    try {
+      let newContact = new Contact(name, phoneNumber, company, email);
+      await db.run(
         `INSERT INTO Contact (name, phoneNumber, company, email) VALUES (?, ?, ?, ?)`,
         [
           newContact.name,
           newContact.phoneNumber,
           newContact.company,
           newContact.email,
-        ],
-        (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
+        ]
       );
-    });
+      return newContact;
+    } catch (err) {
+      throw err
+    } finally {
+      if (db) {
+        await db.close();
+      }
+    }
   }
 
-  static showContact() {
-    return new Promise((resolve, reject) => {
-      db.all(`SELECT * FROM Contact`, (err, rows) => {
-        if (err) {
-          reject(err);
-        }
-        const contacts = rows.map(
-          (row) =>
-            new Contact(
-              row.id,
-              row.name,
-              row.phoneNumber,
-              row.company,
-              row.email
-            )
-        );
-        resolve(contacts);
-      });
-    });
-  }
-
-  static update(id, name, phoneNumber, company, email) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE Contact SET name = ?, phoneNumber = ?, company = ?, email = ? WHERE id = ?`
-      ),
-        [name, phoneNumber, company, email, id],
-        (err) => (ree ? reject(err) : resolve());
-    });
-  }
-
-  static delete(id) {
-    return new Promise((resolve, reject) => {
-      db.run(`DELETE FROM Contact WHERE id = ?`, [id], (err) =>
-        err ? reject(err) : resolve()
+  static async showContact() {
+    const db = await connectDB();
+    try {
+      const showAll = await db.all(`SELECT * FROM Contact`);
+      const contacts = showAll.map(
+        (row) =>
+          new Contact(row.name, row.phoneNumber, row.company, row.email)
       );
-    });
+      return contacts;
+    } catch (err) {
+      throw err
+    } finally {
+      if (db) {
+        await db.close();
+      }
+    }
+  }
+
+  static async update(id, name, phoneNumber, company, email) {
+    const db = await connectDB();
+    try {
+      await db.run(
+        `UPDATE Contact SET name = ?, phoneNumber = ?, company = ?, email = ? WHERE id = ?`,
+        [name, phoneNumber, company, email, id]
+      );
+    } catch (err) {
+      throw err
+    } finally {
+      await db.close();
+    }
+  }
+
+  static async delete(id) {
+    const db = await connectDB();
+    try {
+       await db.run(`DELETE FROM Contact WHERE id = ?`, [id]);
+    } catch(err) {
+      throw err
+    } finally {
+      await db.close()
+    }
   }
 }
 

@@ -1,47 +1,62 @@
-let db = require("../db");
+let connectDB = require("../db");
 
 class Groups {
   constructor(groupName) {
     this.groupName = groupName;
   }
 
-  static create(groupName) {
-    return new Promise((resolve, reject) => {
-      db.run(`INSERT INTO Groups (groupname) VALUES (?)`, [groupName], (err) =>
-        err ? reject(err) : resolve()
+  static async create(groupName) {
+    const db = await connectDB();
+    try {
+      const createContact = await db.run(
+        `INSERT INTO Groups (groupName) VALUES (?)`,
+        [groupName]
       );
-    });
+      return createContact;
+    } catch (err) {
+      throw err;
+    } finally {
+      await db.close();
+    }
   }
 
-  static showGroups() {
-    return new Promise((resolve, reject) => {
-      db.all(`SELECT * FROM Groups`, [], (err, rows) =>
-        err ? reject(err) : resolve(rows)
-      );
-    });
+  static async showGroups() {
+    const db = await connectDB();
+    try {
+      const showAll = await db.all(`SELECT * FROM Groups`);
+      return showAll;
+    } catch (err) {
+      throw err;
+    } finally {
+      await db.close();
+    }
   }
 
-  static update(id, groupName) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE Groups SET groupName = ? WHERE id = ?`,
-        [groupName, id],
-        (err) => {
-          if (err) return reject(err);
-          db.get(`SELECT * FROM Groups WHERE id = ?`, [id], (err, row) =>
-            err ? reject(err) : resolve(row)
-          );
-        }
-      );
-    });
+  static async update(id, groupName) {
+    const db = await connectDB();
+    try {
+      await db.run(`UPDATE Groups SET groupName = ? WHERE id = ?`, [
+        groupName,
+        id,
+      ]);
+      const update = await db.get(`SELECT * FROM Groups WHERE id = ?`, [id]);
+      return update;
+    } catch (err) {
+      throw err;
+    } finally {
+      await db.close();
+    }
   }
 
-  static delete(id) {
-    return new Promise((resolve, reject) => {
-      db.run(`DELETE FROM Groups WHERE id = ?`, [id], (err) =>
-        err ? reject(err) : resolve()
-      );
-    });
+  static async delete(id) {
+    const db = await connectDB();
+    try {
+      await db.run(`DELETE FROM Groups WHERE id = ?`, [id]);
+    } catch (err) {
+      throw err;
+    } finally {
+      await db.close()
+    }
   }
 }
 
