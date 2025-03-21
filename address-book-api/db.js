@@ -11,6 +11,7 @@ async function connectDB() {
 
 async function initDB() {
   const db = await connectDB();
+  console.log("Membuat tabel Contact...");
   await db.exec(`
    CREATE TABLE IF NOT EXISTS Contact (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +21,7 @@ async function initDB() {
       email TEXT
     );
   `);
-
+  console.log("Tabel Contact selesai.");
   await db.exec(`
      CREATE TABLE IF NOT EXISTS Groups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

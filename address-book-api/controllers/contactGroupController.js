@@ -1,53 +1,85 @@
 const GroupContact = require("../models/contactGroupModel");
-const View = require("../view/view");
 
 class ContactGroupsController {
-  static async create(contactId, groupId) {
+  static async create(req, res) {
+    const { contactId, groupId } = req.body;
+    if (!contactId || !groupId) {
+      return res
+        .status(400)
+        .json({ message: "ContactId dan GroupId dibutuhkan." });
+    }
     try {
       await GroupContact.create(contactId, groupId);
-      View.showSuccess(`Group Kontak berhasil ditambahkan!`);
+      return res.status(201).json({ message: "Berhasil membuat Grup Kontak!" });
     } catch (err) {
-      View.showError("Gagal menambahkan contactId, groupId: " + err.message);
+      return res
+        .status(500)
+        .json({ message: "Gagal membuat kontak!", error: err.message });
     }
   }
 
-  static async showAll() {
+  static async showAll(req, res) {
     try {
       const contactGroups = await GroupContact.showGroupContact();
       if (contactGroups.length === 0) {
-        View.showWarning("Belum ada Group Kontak.");
+        return res.status(404).json({ message: "Grup Kontak tidak ada!" });
+      }
+      return res.status(200).json({
+        message: "Berhasil menampilkan Grup Kontak!",
+        data: contactGroups,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Gagal menampilkan Grup Kontak!",
+        error: err.message,
+      });
+    }
+  }
+
+  static async update(req, res) {
+    const { id } = req.params;
+    const { contactId, groupId } = req.body;
+    try {
+      const updatedContactGroup = await GroupContact.update(
+        id,
+        contactId,
+        groupId
+      );
+      if (updatedContactGroup) {
+        return res.status(200).json({
+          message: "Berhasil memperbarui Grup Kontak!",
+          data: updatedContactGroup,
+        });
       } else {
-        View.showTable(contactGroups, "Daftar Group Kontak");
+        return res
+          .status(404)
+          .json({ message: "Grup Kontak tidak ditemukan!" });
       }
     } catch (err) {
-      View.showError("Gagal menampilkan Group Kontak: " + err.message);
+      return res.status(500).json({
+        message: "Kesalahan dalam memperbarui Grup Kontak!",
+        error: err.message,
+      });
     }
   }
 
-  static async update(id, contactId, groupId) {
+  static async delete(req, res) {
+    const { id } = req.params;
     try {
-     const updatedContactGroup = await GroupContact.update(
-       id,
-       contactId,
-       groupId
-     );
-     if (updatedContactGroup) {
-       View.showSuccess("Contact Group berhasil diperbarui:");
-       View.showTable([updatedContactGroup]);
-     } else {
-       View.showWarning("Contact Group tidak ditemukan!");
-     }
+      const deleted = await GroupContact.delete(id);
+      if (!deleted) {
+        return res
+          .status(404)
+          .json({ message: "Grup Kontak tidak ditemukan!" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Berhasil menghapus Grup Kontak!" });
     } catch (err) {
-      View.showError("Gagal mengupdate Group Kontak: " + err.message);
-    }
-  }
-
-  static async delete(id) {
-    try {
-      await GroupContact.delete(id);
-      View.showSuccess(`Data berhasil dihapus!`);
-    } catch (err) {
-      View.showError("Gagal menghapus Group Kontak: " + err.message);
+      return res.status(500).json({
+        message: "Kesalahan dalam menghapus Grup Kontak!",
+        error: err.message,
+      });
     }
   }
 }

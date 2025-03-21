@@ -1,31 +1,33 @@
 const Contact = require("../models/contactModel");
-const View = require("../view/view");
 
 class ContactController {
-  static async create(name, phoneNumber, company, email) {
+  static async create(req, res) {
+    const { name, phoneNumber, company, email } = req.body;
     try {
-      await Contact.create(name, phoneNumber, company, email);
-      View.showSuccess(`Kontak ${name} berhasil ditambahkan!`);
+      const create = await Contact.create(name, phoneNumber, company, email);
+      return res.status(201).json({ message: "Berhasil membuat kontak!", data: create });
     } catch (err) {
-      View.showError("Gagal menambahkan kontak: " + err.message);
+      return res.status(500).json({ message: "Gagal membuat kontak!", error: err.message });
     }
   }
 
-  static async showAll() {
+  static async showAll(req, res) {
     try {
       const contacts = await Contact.showContact();
       if (contacts.length === 0) {
-        View.showWarning("Belum ada kontak.");
-      } else {
-        View.showTable(contacts, "Daftar Kontak");
-      }
+      return res.status(404).json({ message: "Kontak tidak ada!" });
+      } 
+        return res
+          .status(200)
+          .json({ message: "Berhasil menampilkan kontak!", data: contacts });
     } catch (err) {
-      View.showError("Gagal menampilkan kontak: " + err.message);
+      return res.status(500).json({ message: "Gagal menampilkan kontak!", error: err.message });
     }
   }
 
-
-  static async update(id, name, phoneNumber, company, email) {
+  static async update(req, res) {
+    const { id } = req.params;
+    const { name, phoneNumber, company, email } = req.body;
     try {
       const updateContact = await Contact.update(
         id,
@@ -34,19 +36,25 @@ class ContactController {
         company,
         email
       );
-      View.showTable(updateContact)
-    } catch(err) {
-       View.showError("Gagal mengupdate kontak: " + err.message);
+        if (!updateContact) {
+        return res.status(404).json({ message: "Kontak tidak ditemukan!" });
+      }
+      return res.status(200).json({ message: "Berhasil mengupdate kontak!", data: updateContact });
+    } catch (err) {
+      return res.status(500).json({ message: "Gagal mengupdate kontak!", error: err.message });
     }
   }
 
-
-  static async delete(id) {
+  static async delete(req, res) {
+    const { id } = req.params;
     try {
-      await Contact.delete(id)
-      View.showSuccess(`Data berhasil dihapus!`)
-    } catch(err) {
-       View.showError("Gagal menghapus kontak: " + err.message);
+      const deleted = await Contact.delete(id);
+       if (!deleted) {
+        return res.status(404).json({ message: "Kontak tidak ditemukan!" });
+      }
+      return res.status(200).json({ message: "Berhasil menghapus kontak!" });
+    } catch (err) {
+      return res.status(500).json({ message: "Gagal menghapus kontak!", error: err.message });
     }
   }
 }

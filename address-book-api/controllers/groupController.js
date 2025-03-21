@@ -1,49 +1,80 @@
 const Groups = require("../models/groupModel");
-const View = require("../view/view");
 
 class GroupsController {
-  static async create(groupName) {
+  static async create(req, res) {
+    const { groupName } = req.body;
+    if (!groupName) {
+      return res.status(400).json({ message: "Nama Grup dibutuhkan!" });
+    }
     try {
-      await Groups.create(groupName);
-      View.showSuccess(`Group berhasil ditambahkan!`);
+      const create = await Groups.create(groupName);
+      return res
+        .status(201)
+        .json({ message: "Berhasil membuat Grup!",data: create });
     } catch (err) {
-      View.showError("Gagal menambahkan Group: " + err.message);
+      return res
+        .status(500)
+        .json({ message: "Gagal membuat Grup!", error: err.message });
     }
   }
 
-  static async showAll() {
+  static async showAll(req, res) {
     try {
       const showGroups = await Groups.showGroups();
       if (showGroups.length === 0) {
-        View.showWarning("Belum ada Group.");
+        return res.status(404).json({ message: "Grup tidak ditemukan!" });
       } else {
-        View.showTable(showGroups, "Daftar Group");
+        return res.status(200).json({
+          message: "Berhasil menampilkan Grup!",
+          data: showGroups,
+        });
       }
     } catch (err) {
-      View.showError("Gagal menampilkan Group: " + err.message);
+      return res
+        .status(500)
+        .json({ message: "Gagal menampilkan Grup!", error: err.message });
     }
   }
 
-  static async update(id, groupName) {
+  static async update(req, res) {
+    const { id } = req.params;
+    const { groupName } = req.body;
+
+    if (!groupName) {
+      return res.status(400).json({ message: "Nama Grup dibutuhkan!" });
+    }
     try {
       const updatedGroups = await Groups.update(id, groupName);
       if (updatedGroups) {
-        View.showSuccess("Group berhasil diperbarui:");
-        View.showTable([updatedGroups]);
+        return res
+          .status(200)
+          .json({ message: "Berhasil memperbarui Grup!",data: updatedGroups });
       } else {
-        View.showWarning("Group tidak ditemukan!");
+        return res.status(404).json({ message: "Grup tidak ditemukan!" });
       }
     } catch (err) {
-      View.showError("Gagal mengupdate Group: " + err.message);
+      return res
+        .status(500)
+        .json({ message: "Gagal memperbarui Grup!", error: err.message });
     }
   }
 
-  static async delete(id) {
+  static async delete(req, res) {
+    const { id } = req.params;
     try {
-      await Groups.delete(id);
-      View.showSuccess(`Data berhasil dihapus!`);
+      const deleted = await Groups.delete(id);
+      if (!deleted) {
+        return res
+          .status(404)
+          .json({ message: "Grup tidak ditemukan!" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Berhasil menghapus Grup!"});
     } catch (err) {
-      View.showError("Gagal menghapus Group: " + err.message);
+      return res
+        .status(500)
+        .json({ message: "Gagal menghapus Grup!", error: err.message });
     }
   }
 }

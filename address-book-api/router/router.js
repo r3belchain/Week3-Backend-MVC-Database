@@ -1,26 +1,27 @@
 const express = require("express");
 const router = express.Router();
-const contactController = require("../controller/contactController");
-const groupController = require("../controller/groupController");
-const contactGroupController = require("../controller/contactGroupController");
+const ContactController = require("../controllers/contactController");
+const GroupsController = require("../controllers/groupController");
+const ContactGroupsController = require("../controllers/contactGroupController");
 
 router
   .route("/contact")
-  .get(contactController.getContacts)
-  .post(contactController.createContact);
+  .get(ContactController.showAll)
+  .post(ContactController.create);
 
-router.put("/contact/:id", contactController.updateContact);
-router.delete("/contact/:id", contactController.deleteContact);
+router.put("/contact/:id", ContactController.update);
+router.delete("/contact/:id", ContactController.delete);
 
 router
   .route("/groups")
-  .get(groupController.getGroups)
-  .post(groupController.createGroups);
-router.put("/groups/:id", groupController.updateGroups);
-router.delete("/groups/:id", groupController.deleteGroups);
+  .get(GroupsController.showAll)
+  .post(GroupsController.create);
+router.put("/groups/:id", GroupsController.update);
+router.delete("/groups/:id", GroupsController.delete);
 
-router.post("/contactGroup", contactGroupController.createContactGroup);
-router.put("/contactGroup/:id", contactGroupController.updateContactGroup);
-router.delete("/contactGroup/:id", contactGroupController.deleteContactGroup);
+router.get("/contactGroup", ContactGroupsController.showAll);
+router.post("/contactGroup", ContactGroupsController.create);
+router.put("/contactGroup/:id", ContactGroupsController.update);
+router.delete("/contactGroup/:id", ContactGroupsController.delete);
 
 module.exports = router;
